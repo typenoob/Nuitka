@@ -1095,7 +1095,7 @@ def withTemporaryFilename(prefix="", suffix="", temp_path=None):
         delete=False,
         dir=temp_path,
     ) as temp_file:
-        filename = temp_file.name
+        filename = getNormalizedPath(temp_file.name)
         temp_file.close()
         deleteFile(filename, must_exist=True)
 
