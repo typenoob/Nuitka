@@ -6,7 +6,10 @@
 import os
 
 from nuitka.containers.OrderedSets import OrderedSet
-from nuitka.utils.FileOperations import listDllFilesFromDirectory
+from nuitka.utils.FileOperations import (
+    getNormalizedPath,
+    listDllFilesFromDirectory,
+)
 from nuitka.utils.SharedLibraries import getPEFileUsedDllNames
 
 from .DllDependenciesCommon import (
@@ -90,7 +93,7 @@ def detectDLLsWithPEFile(binary_filename, scan_dirs):
 
                 continue
 
-            dll_filename = os.path.normcase(os.path.abspath(dll_filename))
+            dll_filename = getNormalizedPath(os.path.abspath(dll_filename))
             dll_basename = os.path.basename(dll_filename).lower()
 
             if shallIgnoreMissingDLL(dll_basename):
