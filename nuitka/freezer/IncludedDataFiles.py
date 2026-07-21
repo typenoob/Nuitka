@@ -48,6 +48,7 @@ from nuitka.utils.FileOperations import (
     getFilenameExtension,
     getFileSize,
     getNormalizedPath,
+    getNormalizedPathJoin,
     isFilenameBelowPath,
     isLegalPath,
     isLink,
@@ -1132,7 +1133,7 @@ def _handleDataFile(included_datafile, standalone_entry_points):
         external = True
     else:
         _checkPathConflict(included_datafile.dest_path, standalone_entry_points)
-        dest_path = os.path.join(dist_dir, included_datafile.dest_path)
+        dest_path = getNormalizedPathJoin(dist_dir, included_datafile.dest_path)
         external = False
 
     if included_datafile.kind == "data_blob":
