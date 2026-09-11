@@ -17,11 +17,15 @@ def dictUnpacking():
     return {"a": 1, **d}
 
 
+def keywordTarget(**kwargs):
+    return kwargs
+
+
 def keywordUnpacking():
     class _Str(str):
         pass
 
-    return dict(**d, **{_Str("b"): 2})
+    return keywordTarget(**d, **{_Str("b"): 2})
 
 
 a = range(3)
@@ -69,7 +73,7 @@ def dictUnpackingError():
 
 def keywordUnpackingError():
     try:
-        return dict(**d, **{2: 2})
+        return keywordTarget(**d, **{2: 2})
     except Exception as e:
         return e
 
