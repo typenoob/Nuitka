@@ -36,7 +36,6 @@ from nuitka.utils.Utils import (
     isMacOS,
     isWin32OrPosixWindows,
     isWin32Windows,
-    withNoSyntaxWarning,
 )
 from nuitka.Version import getCommercialVersion, getNuitkaVersion
 
@@ -2913,10 +2912,9 @@ def getNuitkaProjectOptions(logger, filename_arg, module_mode):
                     custom_values=custom_values,
                 )
 
-                with withNoSyntaxWarning():
-                    r = eval(  # We allow the user to run any code, pylint: disable=eval-used
-                        expanded
-                    )
+                r = eval(  # We allow the user to run any code, pylint: disable=eval-used
+                    expanded
+                )
 
                 # Likely mistakes, e.g. with "in" tests.
                 if r is not True and r is not False:
@@ -2977,17 +2975,16 @@ def getNuitkaProjectOptions(logger, filename_arg, module_mode):
                     custom_values=custom_values,
                 )
 
-                with withNoSyntaxWarning():
-                    try:
-                        r = eval(  # We allow the user to run any code, pylint: disable=eval-used
-                            expanded
-                        )
-                    except Exception as e:  # pylint: disable=broad-except
-                        return sysexit(
-                            line_number,
-                            "Error, 'nuitka-project-set' expression %r (expanded to %r) failed to evaluate: %s"
-                            % (val_expr, expanded, e),
-                        )
+                try:
+                    r = eval(  # We allow the user to run any code, pylint: disable=eval-used
+                        expanded
+                    )
+                except Exception as e:  # pylint: disable=broad-except
+                    return sysexit(
+                        line_number,
+                        "Error, 'nuitka-project-set' expression %r (expanded to %r) failed to evaluate: %s"
+                        % (val_expr, expanded, e),
+                    )
 
                 # Likely mistakes, e.g. evaluating to a module object, class, or
                 # not type. We enforce that the returned value is a basic

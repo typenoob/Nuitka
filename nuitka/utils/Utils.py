@@ -499,12 +499,6 @@ def withNoDeprecationWarning():
 
 
 @contextmanager
-def withNoSyntaxWarning():
-    with withWarningRemoved(SyntaxWarning):
-        yield
-
-
-@contextmanager
 def withNoWarning():
     with withWarningRemoved(Warning):
         yield

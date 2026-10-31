@@ -221,17 +221,6 @@ def main():
         # Does not return
         reExecuteNuitka(pgo_filename=None)
 
-    # We don't care about deprecations in any version, and these are triggered
-    # by run time calculations of "range" and others, while on python2.7 they
-    # are disabled by default.
-    import warnings
-
-    warnings.simplefilter("ignore", DeprecationWarning)
-
-    # Generated code intentionally uses identity comparisons for interned
-    # small integer states, which Python warns about as SyntaxWarning.
-    warnings.simplefilter("ignore", SyntaxWarning)
-
     # Hack, we need this to bootstrap and it's actually living in __main__
     # module of nuitka package and renamed to where we can get at easily for
     # other uses.

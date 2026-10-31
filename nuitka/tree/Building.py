@@ -143,7 +143,6 @@ from nuitka.Tracing import (
     unusual_logger,
 )
 from nuitka.utils import MemoryUsage
-from nuitka.utils.Utils import withNoSyntaxWarning
 
 from . import SyntaxErrors
 from .FutureSpecState import getFutureSpec, popFutureSpec, pushFutureSpec
@@ -1473,13 +1472,12 @@ def buildModule(
                 )
 
         try:
-            with withNoSyntaxWarning():
-                ast_tree = parseSourceCodeToAst(
-                    source_code=source_code,
-                    module_name=module_name,
-                    filename=source_filename,
-                    line_offset=0,
-                )
+            ast_tree = parseSourceCodeToAst(
+                source_code=source_code,
+                module_name=module_name,
+                filename=source_filename,
+                line_offset=0,
+            )
         except (SyntaxError, IndentationError) as e:
             # Do not hide SyntaxError if asked not to.
             if not hide_syntax_error:
