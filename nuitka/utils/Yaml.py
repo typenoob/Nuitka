@@ -23,6 +23,7 @@ from posixpath import normpath
 from nuitka.__past__ import re_sub, unicode
 from nuitka.containers.OrderedDicts import OrderedDict
 from nuitka.options.Options import getMainModuleName, getUserProvidedYamlFiles
+from nuitka.PythonVersions import python_version
 from nuitka.Tracing import general
 
 from .FileOperations import getFileContents
@@ -926,24 +927,37 @@ Error, duplicate config for module name '%s' section '%s' with mismatching type 
                 assume_yes_for_downloads=assume_yes_for_downloads,
                 check_checksums=check_checksums,
             )
+
             _package_config.update(
                 parsePackageYaml(
                     logger=logger,
                     package_name="nuitka.plugins.standard",
-                    filename="stdlib2.nuitka-package.config.yml",
+                    filename="stdlib.nuitka-package.config.yml",
                     assume_yes_for_downloads=assume_yes_for_downloads,
                     check_checksums=check_checksums,
                 )
             )
-            _package_config.update(
-                parsePackageYaml(
-                    logger=logger,
-                    package_name="nuitka.plugins.standard",
-                    filename="stdlib3.nuitka-package.config.yml",
-                    assume_yes_for_downloads=assume_yes_for_downloads,
-                    check_checksums=check_checksums,
+
+            if python_version < 0x300:
+                _package_config.update(
+                    parsePackageYaml(
+                        logger=logger,
+                        package_name="nuitka.plugins.standard",
+                        filename="stdlib2.nuitka-package.config.yml",
+                        assume_yes_for_downloads=assume_yes_for_downloads,
+                        check_checksums=check_checksums,
+                    )
                 )
-            )
+            else:
+                _package_config.update(
+                    parsePackageYaml(
+                        logger=logger,
+                        package_name="nuitka.plugins.standard",
+                        filename="stdlib3.nuitka-package.config.yml",
+                        assume_yes_for_downloads=assume_yes_for_downloads,
+                        check_checksums=check_checksums,
+                    )
+                )
 
             try:
                 _package_config.update(
