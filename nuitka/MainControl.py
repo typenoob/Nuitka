@@ -64,7 +64,6 @@ from nuitka.importing.Recursion import (
     scanPluginPath,
 )
 from nuitka.installer.Installer import createInstallerDispatch
-from nuitka.optimizations.ValueTraces import setupValueTraceFromOptions
 from nuitka.options.Options import (
     assumeYesForDownloads,
     getDebuggerName,
@@ -1303,9 +1302,6 @@ def _main():
     # Initialize the importing layer from options, main filenames, debugging
     # options, etc.
     setupImportingFromOptions()
-
-    # Initialize value tracing if requested.
-    setupValueTraceFromOptions()
 
     # Let the plugins know we are starting compilation and they should make their checks.
     onCompilationStartChecks()

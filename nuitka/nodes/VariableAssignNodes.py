@@ -137,7 +137,7 @@ class StatementAssignmentVariableMixin(object):
         return self.subnode_source.mayRaiseException(exception_type)
 
     def needsReleasePreviousValue(self):
-        previous = self.variable_trace.getPrevious()
+        previous = self.variable_trace.previous
 
         if previous.mustNotHaveValue():
             # Loop re-entry can give this assignment a previous value even if the
@@ -688,7 +688,7 @@ class StatementAssignmentVariableConstantMutable(
             else:
                 # Unused constants can be eliminated in any case.
                 if not last_trace.getUsageCount():
-                    if last_trace.getPrevious().isUnassignedTrace():
+                    if last_trace.previous.isUnassignedTrace():
                         return (
                             None,
                             "new_statements",
@@ -778,7 +778,7 @@ class StatementAssignmentVariableConstantImmutable(
             else:
                 # Unused constants can be eliminated in any case.
                 if not last_trace.getUsageCount():
-                    if last_trace.getPrevious().isUnassignedTrace():
+                    if last_trace.previous.isUnassignedTrace():
                         return (
                             None,
                             "new_statements",
@@ -807,7 +807,7 @@ class StatementAssignmentVariableConstantImmutable(
                     replacement=lambda _replaced_node: self.subnode_source.makeClone(),
                 )
 
-                if last_trace.getPrevious().isUnassignedTrace():
+                if last_trace.previous.isUnassignedTrace():
                     result = None
                 else:
                     result = makeStatementDelVariable(

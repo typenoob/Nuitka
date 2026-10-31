@@ -33,7 +33,9 @@ from nuitka.utils.InstanceCounters import (
     isCountingInstances,
 )
 
-from .ValueTraces import (
+from .value_traces.ValueTraces import makeMergeTrace
+from .value_traces.ValueTracesGenerated import ValueTraceMerge2
+from .value_traces.ValueTracesStatic import (
     ValueTraceAssign,
     ValueTraceAssignIteratorPropagated,
     ValueTraceAssignUnescapable,
@@ -42,7 +44,6 @@ from .ValueTraces import (
     ValueTraceDeleted,
     ValueTraceEscaped,
     ValueTraceLoop,
-    ValueTraceMerge,
     ValueTraceStartInit,
     ValueTraceStartInitStarArgs,
     ValueTraceStartInitStarDict,
@@ -95,29 +96,29 @@ class CollectionUpdateMixin(object):
         return self.variable_traces
 
     def addVariableMergeTrace2(self, variable, trace1, trace2):
-        if type(trace1) is ValueTraceMerge:
-            flattened = list(trace1.previous)
+        if trace1.isPlainMergeTrace():
+            flattened = []
+            seen = set()
+            trace1.extendPreviousTraces(flattened, seen)
 
-            if type(trace2) is ValueTraceMerge:
-                for candidate in trace2.previous:
-                    if candidate not in flattened:
-                        flattened.append(candidate)
+            if trace2.isPlainMergeTrace():
+                trace2.extendPreviousTraces(flattened, seen)
             else:
-                if trace2 not in flattened:
+                if trace2 not in seen:
+                    seen.add(trace2)
                     flattened.append(trace2)
 
-            trace_merge = ValueTraceMerge(flattened)
+            trace_merge = makeMergeTrace(flattened)
         else:
-            if type(trace2) is ValueTraceMerge:
+            if trace2.isPlainMergeTrace():
                 flattened = [trace1]
+                seen = set()
+                seen.add(trace1)
+                trace2.extendPreviousTraces(flattened, seen)
 
-                for candidate in trace2.previous:
-                    if candidate not in flattened:
-                        flattened.append(candidate)
-
-                trace_merge = ValueTraceMerge(flattened)
+                trace_merge = makeMergeTrace(flattened)
             else:
-                trace_merge = ValueTraceMerge((trace1, trace2))
+                trace_merge = ValueTraceMerge2(trace1, trace2)
 
         version = variable.allocateTargetNumber()
 
@@ -131,28 +132,25 @@ class CollectionUpdateMixin(object):
         first_merge_index = None
 
         for index, trace in enumerate(traces):
-            if type(trace) is ValueTraceMerge:
+            if trace.isPlainMergeTrace():
                 first_merge_index = index
                 break
 
         if first_merge_index is None:
-            trace_merge = ValueTraceMerge(traces)
+            trace_merge = makeMergeTrace(traces)
         else:
             flattened = traces[:first_merge_index]
             seen = set(flattened)
 
             for trace in traces[first_merge_index:]:
-                if type(trace) is ValueTraceMerge:
-                    for candidate in trace.previous:
-                        if candidate not in seen:
-                            seen.add(candidate)
-                            flattened.append(candidate)
+                if trace.isPlainMergeTrace():
+                    trace.extendPreviousTraces(flattened, seen)
                 else:
                     if trace not in seen:
                         seen.add(trace)
                         flattened.append(trace)
 
-            trace_merge = ValueTraceMerge(flattened)
+            trace_merge = makeMergeTrace(flattened)
 
         version = variable.allocateTargetNumber()
 
@@ -363,6 +361,10 @@ class TraceCollectionBase(object):
     They are kept for "variable" and versions.
     """
 
+    # Branch counts and version remainders are interned small integers, so
+    # identity comparisons are intentional.
+    # pylint: disable=literal-comparison
+
     # Many state attributes, pylint: disable=too-many-instance-attributes
 
     __slots__ = (
@@ -499,7 +501,7 @@ class TraceCollectionBase(object):
     def markActiveVariableAsUnknown(self, variable):
         version = self.variable_actives[variable]
 
-        if version % 3 != 2:
+        if version % 3 is not 2:
             variable_traces = self.variable_traces[variable]
             current = variable_traces[version]
 
@@ -925,9 +927,9 @@ class TraceCollectionBase(object):
                 trace1 = variable_traces[version]
                 trace2 = variable_traces[other_version]
 
-                if version % 3 == 1 and trace1.previous is trace2:
+                if version % 3 is 1 and trace1.previous is trace2:
                     pass
-                elif other_version % 3 == 1 and trace2.previous is trace1:
+                elif other_version % 3 is 1 and trace2.previous is trace1:
                     version = other_version
                 else:
                     version = self.addVariableMergeTrace2(variable, trace1, trace2)
@@ -965,10 +967,10 @@ class TraceCollectionBase(object):
 
         merge_size = len(collections)
 
-        if merge_size == 1:
+        if merge_size is 1:
             self.replaceBranch(collections[0])
             return
-        elif merge_size == 2:
+        elif merge_size is 2:
             return self.mergeBranches(*collections)
 
         _merge_counts[merge_size] += 1
@@ -1010,7 +1012,7 @@ class TraceCollectionBase(object):
             for version in versions:
                 trace = variable_traces[version]
 
-                if version % 3 == 1:
+                if version % 3 is 1:
                     winner_version = version
                     escaped_trace = trace.previous
 
@@ -1023,9 +1025,15 @@ class TraceCollectionBase(object):
                     if trace not in escaped:
                         traces.append(trace)
 
-            if len(traces) == 1:
+            trace_count = len(traces)
+
+            if trace_count is 1:
                 version = winner_version
                 assert winner_version is not None
+            elif trace_count is 2:
+                version = self.addVariableMergeTrace2(variable, traces[0], traces[1])
+
+                has_unescaped_variables = True
             else:
                 version = self.addVariableMergeMultipleTrace(
                     variable,

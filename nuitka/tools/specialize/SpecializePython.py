@@ -785,6 +785,49 @@ def addFromNodes():
 addFromNodes()
 
 
+def makeValueTraceMergeNodes():
+    filename_python = getNormalizedPath(
+        "nuitka/optimizations/value_traces/ValueTracesGenerated.py"
+    )
+
+    template = getTemplate(
+        package_name=__package__,
+        template_subdir="templates_python",
+        template_name="ValueTraceMerge.py.j2",
+    )
+
+    with withFileOpenedAndAutoFormattedWithClaim(
+        filename_python,
+        ignore_errors=False,
+        claim=getLicenseGeneratedCode(),
+    ) as output_python:
+
+        def emit(*args):
+            writeLine(output_python, *args)
+
+        emitGenerationWarning(emit, "Value trace merge classes", template.name)
+        emit("# pylint: disable=too-many-branches")
+        emit("""
+from nuitka.Constants import compareConstants
+from nuitka.nodes.shapes.ControlFlowDescriptions import ControlFlowDescriptionFullEscape
+from nuitka.nodes.shapes.StandardShapes import tshape_unknown
+from nuitka.utils.InstanceCounters import counted_init
+
+from .ValueTracesStatic import (
+    ValueTraceMergeBase,
+    ValueTraceMergeMethodsMixin,
+)
+""")
+
+        for trace_count in range(2, 7):
+            emit(
+                template.render(
+                    trace_count=trace_count,
+                    traces=["trace%d" % index for index in range(1, trace_count + 1)],
+                )
+            )
+
+
 def makeChildrenHavingMixinNodes():
     # Complex stuff with many details due to 2 files and modes,
     # pylint: disable=too-many-locals,too-many-statements
@@ -1285,6 +1328,8 @@ def main():
     makeBuiltinOperationNodes()
     traceSpecialization("Make children having mixin nodes...")
     makeChildrenHavingMixinNodes()
+    traceSpecialization("Make value trace merge classes...")
+    makeValueTraceMergeNodes()
     traceSpecialization("OK.")
 
 
