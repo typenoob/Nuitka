@@ -6,9 +6,11 @@
 import os
 import sys
 
+from nuitka.Tracing import tools_logger
 from nuitka.utils.Execution import check_call, getNullInput
 from nuitka.utils.FileOperations import (
     copyFile,
+    copyTree,
     getFileContentByLine,
     getFileContents,
     getFileList,
@@ -125,6 +127,54 @@ def cleanupTarfileForDebian(codename, filename, new_name):
         check_call(command)
 
     check_call(["gzip", "-9", "-n", new_name[:-3]])
+
+
+def fixupPermissionsInplace(
+    dest_path,
+    file_perm,
+    dir_perm,
+    ignore_filenames=(),
+):
+    """Set permissions for all files and directories below a path.
+
+    Args:
+        dest_path: Root directory to fix up.
+        file_perm: Permission bits to set on files.
+        dir_perm: Permission bits to set on directories.
+        ignore_filenames: Filenames that shall keep their permissions.
+    """
+
+    for filename in getFileList(dest_path, ignore_filenames=ignore_filenames):
+        os.chmod(filename, file_perm)
+        os.chmod(os.path.dirname(filename), dir_perm)
+
+
+def copySourceForDebianBuild(source_path):
+    """Copy the source checkout for building Debian packages.
+
+    Notes:
+        The source checkout may be on a mount that reports all files as
+        executable and ignores 'chmod', e.g. a Windows share mounted into a
+        container. The debhelper tooling then executes the Debian config files
+        instead of reading them, which fails, so work on a copy where the
+        permissions can be fixed. This changes the current directory to the
+        copy.
+
+    Args:
+        source_path: Root directory of the source checkout to copy.
+    """
+
+    tools_logger.info(
+        "Copying src to temporary location before modifying it.", style="blue"
+    )
+
+    copyTree(source_path, "/var/tmp/src")
+    os.chdir("/var/tmp/src")
+
+    fixupPermissionsInplace(
+        "debian", int("644", 8), int("755", 8), ignore_filenames=("rules",)
+    )
+    fixupPermissionsInplace("nuitka", int("644", 8), int("755", 8))
 
 
 def _fixupPy2dscDebianPermissions(debian_dir):

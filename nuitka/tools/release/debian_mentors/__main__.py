@@ -6,6 +6,7 @@ import sys
 
 from nuitka.tools.release.DebianPackage import (
     cleanupTarfileForDebian,
+    copySourceForDebianBuild,
     runPy2dsc,
 )
 from nuitka.tools.release.Documentation import checkReleaseDocumentation
@@ -23,6 +24,8 @@ def main():
 
     shutil.rmtree("dist", ignore_errors=True)
     shutil.rmtree("build", ignore_errors=True)
+
+    copySourceForDebianBuild(source_path=os.getcwd())
 
     cleanupSourceDistributionState()
 

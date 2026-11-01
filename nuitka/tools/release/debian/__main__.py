@@ -10,6 +10,8 @@ from nuitka.options.CommandLineOptionsTools import makeOptionsParser
 from nuitka.tools.release.DebianPackage import (
     checkChangeLog,
     cleanupTarfileForDebian,
+    copySourceForDebianBuild,
+    fixupPermissionsInplace,
     runPy2dsc,
     shallNotIncludeInlineCopy,
 )
@@ -69,17 +71,6 @@ Where the package source resides. Default %default.""",
     return options, codename
 
 
-def fixupPermissionsInplace(
-    dest_path,
-    file_perm,
-    dir_perm,
-    ignore_filenames=(),
-):
-    for filename in getFileList(dest_path, ignore_filenames=ignore_filenames):
-        os.chmod(filename, file_perm)
-        os.chmod(os.path.dirname(filename), dir_perm)
-
-
 def fixupPermissionsCopy(source_path, dest_path, ignore_filenames=()):
     copyTree(source_path=source_path, dest_path=dest_path)
 
@@ -118,18 +109,9 @@ def main():
     shutil.rmtree("dist", ignore_errors=True)
     shutil.rmtree("build", ignore_errors=True)
 
-    tools_logger.info(
-        "Copying src to temporary location before modifying it.", style="blue"
-    )
-    copyTree(options.src, "/var/tmp/src")
-    os.chdir("/var/tmp/src")
+    copySourceForDebianBuild(source_path=options.src)
 
     cleanupSourceDistributionState()
-
-    fixupPermissionsInplace(
-        "debian", int("644", 8), int("755", 8), ignore_filenames=("rules",)
-    )
-    fixupPermissionsInplace("nuitka", int("644", 8), int("755", 8))
 
     # Build the source distribution as per our setup, however that's not going
     # to be good enough for Debian packages. We may want to avoid inline copies
