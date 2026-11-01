@@ -317,7 +317,7 @@ class ValueTraceBase(object):
 
 
 class ValueTraceSinglePreviousMixin(object):
-    """Mixin for traces that have a single previous trace."""
+    """Mixin for traces that always have exactly one previous trace."""
 
     # Mixins are not allowed to specify slots, pylint: disable=assigning-non-slot
     __slots__ = ()
@@ -758,14 +758,11 @@ class ValueTraceEscaped(ValueTraceUnknown):
         return trusted_node is not None and trusted_node.hasShapeDictionaryExact()
 
 
-class ValueTraceAssign(ValueTraceSinglePreviousMixin, ValueTraceBase):
-    __slots__ = (
-        "previous",
-        "assign_node",
-    )
+class ValueTraceAssignBase(ValueTraceBase):
+    __slots__ = ("assign_node",)
 
     @counted_init
-    def __init__(self, owner, assign_node, previous):
+    def __init__(self, owner, assign_node):
         # assert assign_node.isStatementAssignmentVariable(), assign_node
 
         self.owner = owner
@@ -773,8 +770,11 @@ class ValueTraceAssign(ValueTraceSinglePreviousMixin, ValueTraceBase):
         self.name_usage_count = 0
         self.merge_usage_count = 0
 
-        self.previous = previous
         self.assign_node = assign_node
+
+    @staticmethod
+    def isAssignTrace():
+        return True
 
     def __repr__(self):
         return "<%s at %s of %s>" % (
@@ -782,10 +782,6 @@ class ValueTraceAssign(ValueTraceSinglePreviousMixin, ValueTraceBase):
             self.assign_node.getSourceReference().getAsString(),
             self.assign_node.subnode_source,
         )
-
-    @staticmethod
-    def isAssignTrace():
-        return True
 
     @staticmethod
     def isUsingTrace():
@@ -880,10 +876,58 @@ class ValueTraceAssign(ValueTraceSinglePreviousMixin, ValueTraceBase):
         return self.assign_node.subnode_source.mayHaveSideEffects()
 
 
+class ValueTraceAssign(ValueTraceSinglePreviousMixin, ValueTraceAssignBase):
+    __slots__ = ("previous",)
+
+    @counted_init
+    def __init__(self, owner, assign_node, previous):
+        # assert assign_node.isStatementAssignmentVariable(), assign_node
+        # For performance reasons, we don't do super init, but duplicate it here.
+        # pylint: disable=super-init-not-called
+
+        self.owner = owner
+        self.usage_count = 0
+        self.name_usage_count = 0
+        self.merge_usage_count = 0
+
+        self.previous = previous
+        self.assign_node = assign_node
+
+
 class ValueTraceAssignUnescapable(ValueTraceAssign):
     @staticmethod
     def isTraceThatNeedsEscape():
         return False
+
+
+class ValueTraceAssignStartVeryTrusted(ValueTraceAssignBase):
+    """Very trusted value at the start of a trace collection."""
+
+    __slots__ = ()
+
+    @counted_init
+    def __init__(self, owner, assign_node):
+        # For performance reasons, we don't do super init, but duplicate it here.
+        # pylint: disable=super-init-not-called
+
+        self.owner = owner
+        self.usage_count = 0
+        self.name_usage_count = 0
+        self.merge_usage_count = 0
+
+        self.assign_node = assign_node
+
+    @staticmethod
+    def isTraceThatNeedsEscape():
+        return False
+
+    @staticmethod
+    def isAssignTraceVeryTrusted():
+        return True
+
+    @staticmethod
+    def isUnknownOrVeryTrustedTrace():
+        return True
 
 
 class ValueTraceAssignVeryTrusted(ValueTraceAssignUnescapable):

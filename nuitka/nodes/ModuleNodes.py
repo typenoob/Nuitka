@@ -409,11 +409,12 @@ class CompiledPythonModule(
 
                 if type(previous) is tuple:
                     for prev_trace in previous:
-                        graph.add_edge(node_names[prev_trace], node_name)
-
                         assert prev_trace is not variable_trace
 
-                elif previous is not None:
+                        if prev_trace in node_names:
+                            graph.add_edge(node_names[prev_trace], node_name)
+
+                elif previous is not None and previous in node_names:
                     assert previous is not variable_trace
                     graph.add_edge(node_names[previous], node_name)
 

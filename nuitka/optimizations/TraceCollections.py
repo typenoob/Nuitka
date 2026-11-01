@@ -38,6 +38,7 @@ from .value_traces.ValueTracesGenerated import ValueTraceMerge2
 from .value_traces.ValueTracesStatic import (
     ValueTraceAssign,
     ValueTraceAssignIteratorPropagated,
+    ValueTraceAssignStartVeryTrusted,
     ValueTraceAssignUnescapable,
     ValueTraceAssignUnescapablePropagated,
     ValueTraceAssignVeryTrusted,
@@ -626,12 +627,12 @@ class TraceCollectionBase(object):
     def onVariableSetAliasing(self, variable, version, assign_node, source):
         other_variable_trace = source.variable_trace
 
-        if other_variable_trace.__class__ is ValueTraceAssignUnescapable:
-            return self.onVariableSetToUnescapableValue(
+        if other_variable_trace.isAssignTraceVeryTrusted():
+            return self.onVariableSetToVeryTrustedValue(
                 variable=variable, version=version, assign_node=assign_node
             )
-        elif other_variable_trace.__class__ is ValueTraceAssignVeryTrusted:
-            return self.onVariableSetToVeryTrustedValue(
+        elif isinstance(other_variable_trace, ValueTraceAssignUnescapable):
+            return self.onVariableSetToUnescapableValue(
                 variable=variable, version=version, assign_node=assign_node
             )
         else:
@@ -1391,10 +1392,9 @@ class TraceCollectionFunction(CollectionStartPointMixin, TraceCollectionBase):
                 self, variable, old_collection
             )
 
-        assign_trace = ValueTraceAssignVeryTrusted(
+        assign_trace = ValueTraceAssignStartVeryTrusted(
             self.owner,
             trusted_node.getParent(),
-            None,
         )
 
         # TODO: Make very trusted assign traces also div recognized by expanding
