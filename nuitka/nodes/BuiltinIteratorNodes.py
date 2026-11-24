@@ -8,6 +8,7 @@ from nuitka.specs import BuiltinParameterSpecs
 
 from .BuiltinLenNodes import ExpressionBuiltinLen
 from .ChildrenHavingMixins import (
+    ChildHavingExpressionMixin,
     ChildHavingSequenceMixin,
     ChildHavingValuesTupleMixin,
     ChildrenHavingSequenceStartMixin,
@@ -15,7 +16,10 @@ from .ChildrenHavingMixins import (
 )
 from .ExpressionBases import ExpressionBase, ExpressionBuiltinSingleArgBase
 from .ExpressionBasesGenerated import ExpressionBuiltinIter2Base
-from .ExpressionShapeMixins import ExpressionListShapeExactMixin
+from .ExpressionShapeMixins import (
+    ExpressionBoolShapeExactMixin,
+    ExpressionListShapeExactMixin,
+)
 from .HardImportNodesGenerated import (
     ExpressionBuiltinsReversedCallBase,
     ExpressionBuiltinsSortedBefore3CallBase,
@@ -411,6 +415,41 @@ class ExpressionBuiltinIterForUnpack(ExpressionBuiltinIter1):
             raise TypeError(
                 "cannot unpack non-iterable %s object" % (type(value).__name__)
             )
+
+
+class ExpressionStarListIterableCheck(
+    ExpressionBoolShapeExactMixin, ChildHavingExpressionMixin, ExpressionBase
+):
+    """Check if a value supports the iteration protocol for star arguments.
+
+    This is the C level check of CPython for star arguments, i.e. the
+    "tp_iter" slot being present, or the value being usable through the
+    old style sequence protocol. Deliberately not looking up "__iter__"
+    as an attribute, which can be hidden by "__getattribute__", and
+    which is what the check used to do.
+    """
+
+    kind = "EXPRESSION_STAR_LIST_ITERABLE_CHECK"
+
+    named_children = ("expression",)
+
+    def __init__(self, expression, source_ref):
+        ChildHavingExpressionMixin.__init__(self, expression=expression)
+
+        ExpressionBase.__init__(self, source_ref)
+
+    @staticmethod
+    def mayRaiseExceptionOperation():
+        return False
+
+    def mayRaiseException(self, exception_type):
+        return (
+            self.subnode_expression.mayRaiseException(exception_type)
+            or self.mayRaiseExceptionOperation()
+        )
+
+    def computeExpression(self, trace_collection):
+        return self, None, None
 
 
 class StatementSpecialUnpackCheckFromIterated(

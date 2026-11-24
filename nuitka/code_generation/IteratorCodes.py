@@ -569,6 +569,20 @@ def generateBuiltinAllCode(to_name, expression, emit, context):
     )
 
 
+def generateStarListIterableCheckCode(to_name, expression, emit, context):
+    (value_name,) = generateChildExpressionsCode(
+        expression=expression, emit=emit, context=context
+    )
+
+    to_name.getCType().emitAssignmentCodeFromBoolCondition(
+        to_name=to_name,
+        condition="IS_STAR_LIST_ITERABLE(%s)" % value_name,
+        emit=emit,
+    )
+
+    getReleaseCode(release_name=value_name, emit=emit, context=context)
+
+
 #     Part of "Nuitka", an optimizing Python compiler that is compatible and
 #     integrates with CPython, but also works on its own.
 #

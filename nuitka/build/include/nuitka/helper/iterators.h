@@ -46,6 +46,15 @@ NUITKA_MAY_BE_UNUSED static inline bool HAS_ITERNEXT(PyObject *value) {
 #endif
 }
 
+#if PYTHON_VERSION >= 0x350
+// This mirrors the check that CPython does for star arguments
+NUITKA_MAY_BE_UNUSED static inline bool IS_STAR_LIST_ITERABLE(PyObject *value) {
+    CHECK_OBJECT(value);
+
+    return Py_TYPE(value)->tp_iter != NULL || PySequence_Check(value);
+}
+#endif
+
 // Taken from CPython implementation, so we can access and create it, needs to match
 // their definition exactly. spell-checker: ignore seqiterobject
 typedef struct {
